@@ -19,6 +19,43 @@ func initHeaders(writer http.ResponseWriter) {
 	writer.Header().Set("content-type", "application/json")
 }
 
+// Responses------------------
+
+func response200(writer http.ResponseWriter, message string) {
+	msg := Message{
+		StatusCode: 200,
+		Message:    message,
+		IsError:    false,
+	}
+
+	writer.WriteHeader(http.StatusOK)
+	json.NewEncoder(writer).Encode(msg)
+}
+
+func response400(writer http.ResponseWriter, message string) {
+	msg := Message{
+		StatusCode: 400,
+		Message:    message,
+		IsError:    true,
+	}
+
+	writer.WriteHeader(http.StatusBadRequest)
+	json.NewEncoder(writer).Encode(msg)
+}
+
+func response500(writer http.ResponseWriter, message string) {
+	msg := Message{
+		StatusCode: 500,
+		Message:    message,
+		IsError:    true,
+	}
+
+	writer.WriteHeader(http.StatusInternalServerError)
+	json.NewEncoder(writer).Encode(msg)
+}
+
+//Handlers------------------
+
 func (api *API) GetAllArticles(writer http.ResponseWriter, request *http.Request) {
 	initHeaders(writer)
 
@@ -27,17 +64,12 @@ func (api *API) GetAllArticles(writer http.ResponseWriter, request *http.Request
 
 	if err != nil {
 		api.logger.Info("Error while Articles.SelectAll :", err)
-		msg := Message{
-			StatusCode: 501,
-			Message:    "We have some troubles to accessing database",
-			IsError:    true,
-		}
-		writer.WriteHeader(501)
-		json.NewEncoder(writer).Encode(msg)
+
+		response500(writer, "We have some troubles to accessing database")
 
 		return
 	}
-	writer.WriteHeader(200)
+	writer.WriteHeader(http.StatusOK)
 	json.NewEncoder(writer).Encode(articles)
 }
 
@@ -50,14 +82,8 @@ func (api *API) PostArticle(writer http.ResponseWriter, request *http.Request) {
 
 	if err != nil {
 		api.logger.Info("Invalid json received from client:", err)
-		msg := Message{
-			StatusCode: 400,
-			Message:    "Provided json is invalid",
-			IsError:    true,
-		}
 
-		writer.WriteHeader(400)
-		json.NewEncoder(writer).Encode(msg)
+		response400(writer, "Provided json is invalid")
 
 		return
 	}
@@ -66,16 +92,13 @@ func (api *API) PostArticle(writer http.ResponseWriter, request *http.Request) {
 
 	if err != nil {
 		api.logger.Info("Trouble while creating new article:", err)
-		msg := Message{
-			StatusCode: 501,
-			Message:    "We have some troubles to accessing database",
-			IsError:    true,
-		}
-		writer.WriteHeader(501)
-		json.NewEncoder(writer).Encode(msg)
+
+		response500(writer, "We have some troubles to accessing database")
+
+		return
 	}
 
-	writer.WriteHeader(200)
+	writer.WriteHeader(http.StatusOK)
 	json.NewEncoder(writer).Encode(a)
 }
 
@@ -87,14 +110,7 @@ func (api *API) GetArticleById(writer http.ResponseWriter, request *http.Request
 	if err != nil {
 		api.logger.Info("Troubles while parsing [id] param :", err)
 
-		msg := Message{
-			StatusCode: 400,
-			Message:    "Don't use id as casting to int value",
-			IsError:    true,
-		}
-
-		writer.WriteHeader(400)
-		json.NewEncoder(writer).Encode(msg)
+		response400(writer, "Don't use id as casting to int value")
 
 		return
 	}
@@ -103,13 +119,7 @@ func (api *API) GetArticleById(writer http.ResponseWriter, request *http.Request
 	if err != nil {
 		api.logger.Info("Troubles while accessing database table (articles) width id:", err)
 
-		msg := Message{
-			StatusCode: 500,
-			Message:    "We have some troubles to accessing database",
-			IsError:    true,
-		}
-		writer.WriteHeader(500)
-		json.NewEncoder(writer).Encode(msg)
+		response500(writer, "We have some troubles to accessing database")
 
 		return
 	}
@@ -119,15 +129,15 @@ func (api *API) GetArticleById(writer http.ResponseWriter, request *http.Request
 		msg := Message{
 			StatusCode: 404,
 			Message:    "Article with that id not found in database",
-			IsError:    false,
+			IsError:    true,
 		}
-		writer.WriteHeader(404)
+		writer.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(writer).Encode(msg)
 
 		return
 	}
 
-	writer.WriteHeader(200)
+	writer.WriteHeader(http.StatusOK)
 	json.NewEncoder(writer).Encode(article)
 
 }
@@ -141,14 +151,7 @@ func (api *API) DeleteArticleById(writer http.ResponseWriter, request *http.Requ
 	if err != nil {
 		api.logger.Info("Troubles while parsing [id] param :", err)
 
-		msg := Message{
-			StatusCode: 400,
-			Message:    "Don't use id as casting to int value",
-			IsError:    true,
-		}
-
-		writer.WriteHeader(400)
-		json.NewEncoder(writer).Encode(msg)
+		response400(writer, "Don't use id as casting to int value")
 
 		return
 	}
@@ -157,25 +160,12 @@ func (api *API) DeleteArticleById(writer http.ResponseWriter, request *http.Requ
 	if err != nil {
 		api.logger.Info("Troubles while accessing database table (articles) width id:", err)
 
-		msg := Message{
-			StatusCode: 501,
-			Message:    "We have some troubles to accessing database",
-			IsError:    true,
-		}
-		writer.WriteHeader(501)
-		json.NewEncoder(writer).Encode(msg)
+		response500(writer, "We have some troubles to accessing database")
 
 		return
 	}
 
-	writer.WriteHeader(200)
-	msg := Message{
-		StatusCode: 200,
-		Message:    fmt.Sprintf("Article width ID %d deleted successfully", id),
-		IsError:    false,
-	}
-	json.NewEncoder(writer).Encode(msg)
-
+	response200(writer, fmt.Sprintf("Article width ID %d deleted successfully", id))
 }
 
 func (api *API) PostUserRegister(writer http.ResponseWriter, request *http.Request) {
@@ -187,14 +177,8 @@ func (api *API) PostUserRegister(writer http.ResponseWriter, request *http.Reque
 
 	if err != nil {
 		api.logger.Info("Invalid json received from client:", err)
-		msg := Message{
-			StatusCode: 400,
-			Message:    "Provided json is invalid",
-			IsError:    true,
-		}
 
-		writer.WriteHeader(400)
-		json.NewEncoder(writer).Encode(msg)
+		response400(writer, "Provided json is invalid")
 
 		return
 	}
@@ -204,13 +188,7 @@ func (api *API) PostUserRegister(writer http.ResponseWriter, request *http.Reque
 	if err != nil {
 		api.logger.Info("Troubles while accessing database table (user) width id:", err)
 
-		msg := Message{
-			StatusCode: 500,
-			Message:    "We have some troubles to accessing database",
-			IsError:    true,
-		}
-		writer.WriteHeader(500)
-		json.NewEncoder(writer).Encode(msg)
+		response500(writer, "We have some troubles to accessing database")
 
 		return
 	}
@@ -218,14 +196,8 @@ func (api *API) PostUserRegister(writer http.ResponseWriter, request *http.Reque
 	// Если такой пользователь уже есть то не делаем регистрацию
 	if ok {
 		api.logger.Info("User already registered with username:", user.Login)
-		msg := Message{
-			StatusCode: 400,
-			Message:    "User with that login already exists ",
-			IsError:    true,
-		}
 
-		writer.WriteHeader(400)
-		json.NewEncoder(writer).Encode(msg)
+		response400(writer, "User with that login already exists")
 
 		return
 	}
@@ -235,23 +207,10 @@ func (api *API) PostUserRegister(writer http.ResponseWriter, request *http.Reque
 	if err != nil {
 		api.logger.Info("Troubles while accessing database table (user) width id:", err)
 
-		msg := Message{
-			StatusCode: 500,
-			Message:    "We have some troubles to accessing database",
-			IsError:    true,
-		}
-		writer.WriteHeader(500)
-		json.NewEncoder(writer).Encode(msg)
+		response500(writer, "We have some troubles to accessing database")
 
 		return
 	}
 
-	msg := Message{
-		StatusCode: 201,
-		Message:    fmt.Sprintf("User registered with username: %s", userAdd.Login),
-		IsError:    false,
-	}
-
-	writer.WriteHeader(201)
-	json.NewEncoder(writer).Encode(msg)
+	response200(writer, fmt.Sprintf("User registered with username: %s", userAdd.Login))
 }

@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/sirupsen/logrus"
 	"go_advanced/Lesson7/storage"
+	"net/http"
 )
 
 var prefix string = "/api/v1"
@@ -19,11 +20,11 @@ func (api *API) configLoggerField() error {
 }
 
 func (api *API) configRouterField() {
-	api.router.HandleFunc(prefix+"/articles", api.GetAllArticles).Methods("GET")
-	api.router.HandleFunc(prefix+"/articles/{id}", api.GetArticleById).Methods("GET")
-	api.router.HandleFunc(prefix+"/articles/{id}", api.DeleteArticleById).Methods("DELETE")
-	api.router.HandleFunc(prefix+"/articles", api.PostArticle).Methods("POST")
-	api.router.HandleFunc(prefix+"/user/register", api.PostUserRegister).Methods("POST")
+	api.router.HandleFunc(prefix+"/articles", api.GetAllArticles).Methods(http.MethodGet)
+	api.router.HandleFunc(prefix+"/articles/{id}", api.GetArticleById).Methods(http.MethodGet)
+	api.router.HandleFunc(prefix+"/articles/{id}", api.DeleteArticleById).Methods(http.MethodDelete)
+	api.router.HandleFunc(prefix+"/articles", api.PostArticle).Methods(http.MethodPost)
+	api.router.HandleFunc(prefix+"/user/register", api.PostUserRegister).Methods(http.MethodPost)
 }
 
 func (api *API) configStorageField() error {
