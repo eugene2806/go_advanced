@@ -6,64 +6,50 @@ import (
 	"log"
 	"net/http"
 	"zakladka/model"
+	"zakladka/responses"
 	"zakladka/service"
 )
 
-type Message struct {
-	StatusCode int    `json:"status_code"`
-	Message    string `json:"message"`
-	Error      bool   `json:"error"`
+type MyServer struct {
+	bookMarkService *service.BookmarkService
 }
 
-func response200(writer http.ResponseWriter, message string) {
-	msg := Message{
-		StatusCode: 200,
-		Message:    message,
-		Error:      false,
-	}
-
-	writer.WriteHeader(http.StatusOK)
-	json.NewEncoder(writer).Encode(msg)
+func (ms *MyServer) GetAllBookMarks() (map[string]string, error) {
+	return ms.bookMarkService.ViewBookMarks()
 }
 
-func response400(writer http.ResponseWriter, message string) {
-	msg := Message{
-		StatusCode: 400,
-		Message:    message,
-		Error:      true,
-	}
-
-	writer.WriteHeader(http.StatusBadRequest)
-	json.NewEncoder(writer).Encode(msg)
+func (ms *MyServer) AddBookMark(name, text string) error {
+	return ms.bookMarkService.AddBookMarks(name, text)
 }
 
-func response500(writer http.ResponseWriter, message string) {
-	msg := Message{
-		StatusCode: 500,
-		Message:    message,
-		Error:      true,
-	}
-
-	writer.WriteHeader(http.StatusInternalServerError)
-	json.NewEncoder(writer).Encode(msg)
+func (ms *MyServer) RemoveBookMark(name string) error {
+	return ms.bookMarkService.DeleteBookMarks(name)
 }
 
-func initHeaders(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "application/json")
-}
-
-func GetAllBookmarks(w http.ResponseWriter, r *http.Request) {
-	initHeaders(w)
+func GetAllBookmarks(writer http.ResponseWriter, r *http.Request) {
+	initHeaders(writer)
 
 	log.Println("Getting all bookmarks")
+	myServer := MyServer{bookMarkService: &service.BookmarkService{}}
 
-	w.WriteHeader(http.StatusOK)
+	m, err := myServer.GetAllBookMarks()
+	if err != nil {
+		responses.Response500(writer, err.Error())
 
-	json.NewEncoder(w).Encode(model.DB)
+		return
+	}
+
+	if len(m) <= 0 {
+		responses.Response200(writer, "Закладок нет")
+
+		return
+	}
+
+	responses.Response200(writer, m)
 }
 
-func PostBookmark(w http.ResponseWriter, r *http.Request) {
-	initHeaders(w)
+func PostBookmark(writer http.ResponseWriter, r *http.Request) {
+	initHeaders(writer)
 
 	log.Println("Post bookmark")
 	var bookmark model.Bookmark
@@ -72,39 +58,43 @@ func PostBookmark(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("Invalid json received from client:", err)
 
-		response400(w, "Invalid json received from client")
+		responses.Response400(writer, "Invalid json received from client")
 
 		return
 	}
-	bookmarkService := service.BookmarkService{}
 
-	msg, err := bookmarkService.AddBookMarks(model.DB, bookmark.Name, bookmark.Text)
+	myServer := MyServer{bookMarkService: &service.BookmarkService{}}
+	err = myServer.AddBookMark(bookmark.Name, bookmark.Text)
 
 	if err != nil {
-		log.Println(msg)
+		log.Println("Закладка с таким названием уже есть")
 
-		response500(w, msg)
+		responses.Response500(writer, "Закладка с таким названием уже есть")
 
 		return
 	}
 
-	response200(w, msg)
+	responses.Response200(writer, "Закладка добавлена")
 }
 
-func DeleteBookmark(w http.ResponseWriter, r *http.Request) {
-	initHeaders(w)
+func DeleteBookmark(writer http.ResponseWriter, r *http.Request) {
+	initHeaders(writer)
 	log.Println("Delete bookmark")
 
 	path := r.URL.Path
 	bookMarkName := fmt.Sprintf("%s", path[11:])
-	bookmarkService := service.BookmarkService{}
-	msg, err := bookmarkService.DeleteBookMarks(model.DB, bookMarkName)
+	myServer := MyServer{bookMarkService: &service.BookmarkService{}}
+	err := myServer.RemoveBookMark(bookMarkName)
 	if err != nil {
-		log.Println(msg)
-		response500(w, msg)
+		log.Println("Закладки с таким названием нет")
+		responses.Response500(writer, "Закладки с таким названием нет")
 
 		return
 	}
 
-	response200(w, msg)
+	responses.Response200(writer, "Закладка удалена")
+}
+
+func initHeaders(writer http.ResponseWriter) {
+	writer.Header().Set("Content-Type", "application/json")
 }

@@ -2,44 +2,40 @@ package service
 
 import (
 	"errors"
-	"fmt"
+	"zakladka/model"
 )
 
-type BookmarkService struct{}
-
-var msg string
-
-func (bms *BookmarkService) ViewBookMarks(bm map[string]string) {
-	fmt.Println("-----------")
-	for key, value := range bm {
-		fmt.Printf("Название закладки: %s Содержимое закладки: %s\n", key, value)
-	}
-	fmt.Println("-----------")
+type BookmarkService struct {
 }
 
-func (bms *BookmarkService) AddBookMarks(bm map[string]string, name, text string) (string, error) {
+func (bms *BookmarkService) ViewBookMarks() (map[string]string, error) {
+	var db interface{}
+	db = model.DB
+	if _, ok := db.(map[string]string); !ok {
 
-	if _, ok := bm[name]; !ok {
-		bm[name] = text
-		msg = "Закладка добавлена"
-
-		return msg, nil
+		return nil, errors.New("error opening the database")
 	}
 
-	msg = "Закладка с таким названием уже есть"
-
-	return msg, errors.New("there is already a bookmark with this name")
+	return model.DB, nil
 }
 
-func (bms *BookmarkService) DeleteBookMarks(bm map[string]string, name string) (string, error) {
-	if _, ok := (bm)[name]; ok {
-		delete(bm, name)
+func (bms *BookmarkService) AddBookMarks(name, text string) error {
 
-		msg = "Закладка удалена"
-		return msg, nil
+	if _, ok := model.DB[name]; !ok {
+		model.DB[name] = text
+
+		return nil
 	}
 
-	msg = "Закладки с таким названием нет"
+	return errors.New("there is already a bookmark with this name")
+}
 
-	return msg, errors.New("there is no bookmark with this name")
+func (bms *BookmarkService) DeleteBookMarks(name string) error {
+	if _, ok := (model.DB)[name]; ok {
+		delete(model.DB, name)
+
+		return nil
+	}
+
+	return errors.New("there is no bookmark with this name")
 }

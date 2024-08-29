@@ -6,41 +6,85 @@ import (
 	"zakladka/service"
 )
 
+type MyCliConsole struct {
+	bookMarkService *service.BookmarkService
+}
+
+func (mc *MyCliConsole) GetAllBookMarks() (map[string]string, error) {
+	return mc.bookMarkService.ViewBookMarks()
+}
+
+func (mc *MyCliConsole) AddBookMark(name, text string) error {
+	return mc.bookMarkService.AddBookMarks(name, text)
+}
+
+func (mc *MyCliConsole) RemoveBookMark(name string) error {
+	return mc.bookMarkService.DeleteBookMarks(name)
+}
+
 func ConsoleInput() {
 	fmt.Println("Приложение для закладок")
 
-	variant := getMenu()
-	bookmarkService := service.BookmarkService{}
+	myCli := MyCliConsole{bookMarkService: &service.BookmarkService{}}
+
 	bookMark := model.Bookmark{
 		Name: "",
 		Text: "",
 	}
 menu:
 	for {
+		variant := getMenu()
 		switch variant {
+
 		case 1:
+
 			fmt.Println("Просмотр закладок")
-			if len(model.DB) <= 0 {
-				fmt.Println("Закладок нет")
-				variant = getMenu()
+			m, err := myCli.GetAllBookMarks()
+			if err != nil {
+				fmt.Println(err)
+
 				break
 			}
-			bookmarkService.ViewBookMarks(model.DB)
-			variant = getMenu()
+
+			if len(m) <= 0 {
+				fmt.Println("Закладок нет")
+
+				break
+			}
+
+			fmt.Println("-----------")
+			for key, value := range m {
+				fmt.Printf("Название закладки: %s | Содержимое закладки: %s\n", key, value)
+			}
+
+			fmt.Println("-----------")
+
 		case 2:
 			fmt.Println("Введите название закладки")
 			fmt.Scan(&bookMark.Name)
 			fmt.Println("Введите тест закладки")
 			fmt.Scan(&bookMark.Text)
-			msg, _ := bookmarkService.AddBookMarks(model.DB, bookMark.Name, bookMark.Text)
-			fmt.Println(msg)
-			variant = getMenu()
+			err := myCli.AddBookMark(bookMark.Name, bookMark.Text)
+			if err != nil {
+				fmt.Println("Закладка с таким названием уже есть")
+
+				break
+			}
+
+			fmt.Println("Закладка добавлена")
+
 		case 3:
 			fmt.Println("Введите название закладки")
 			fmt.Scan(&bookMark.Name)
-			msg, _ := bookmarkService.DeleteBookMarks(model.DB, bookMark.Name)
-			fmt.Println(msg)
-			variant = getMenu()
+			err := myCli.RemoveBookMark(bookMark.Name)
+			if err != nil {
+				fmt.Println("Закладки с таким названием нет")
+
+				break
+			}
+
+			fmt.Println("Закладка удалена")
+
 		case 4:
 			break menu
 
