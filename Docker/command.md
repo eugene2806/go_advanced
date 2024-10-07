@@ -10,7 +10,10 @@
 [Перенос файлов в контейнер и на локальную машину (cp, diff)](#перенос-файлов-в-контейнер-и-на-локальную-машину)  
 [Типы монтирования в Docker: bind, volume и tmpfs](#типы-монтирования-в-docker-bind-tmpfs-и-volume)  
 [Networking - работа с сетями](#networking---работа-с-сетями)   
-[Building images](#building-images)
+[Building images](#building-images)  
+[Docker Compose](#docker-compose)
+
+
 
 
 
@@ -555,6 +558,97 @@
 `docker network connect practice_net postgres`  
 `docker run --name web --network practice_net 71b96bd673c797`  
 ---
+
+##  Docker Compose
+
+**Основные команды с описанием**  
+
+- [x] `docker compose up` — Запускает все сервисы, описанные в файле `docker-compose.yml`. Если образы еще не существуют,  
+они будут созданы. Контейнеры запускаются в фоновом режиме, если используется флаг `-d (detached mode)`.
+
+- [x] `docker compose down` — Останавливает и удаляет контейнеры, созданные с помощью `docker-compose up`, а также сети и тома,  
+если указаны соответствующие опции.
+
+- [x] `docker compose build` — Создает или пересобирает образы для всех сервисов, описанных в файле `docker-compose.yml`.  
+Флаг `--no-cache` отключает использование кеша при сборке.
+
+- [x] `docker compose start` — Запускает уже созданные контейнеры (которые были остановлены), не пересоздавая их.
+
+- [x] `docker compose stop` — Останавливает работающие контейнеры, но не удаляет их.
+
+- [x] `docker compose restart` — Перезапускает контейнеры, если они уже созданы.
+
+- [x] `docker compose logs` — Отображает логи для всех сервисов в реальном времени.  
+Можно указать конкретный сервис для просмотра его логов, например: `docker-compose logs service_name`.
+
+- [x] `docker compose ps` — Показывает информацию о запущенных контейнерах, включая статус и имена контейнеров.
+
+- [x] `docker compose exec` — Выполняет команду в уже запущенном контейнере.  
+Например, чтобы получить доступ в контейнер с помощью оболочки: `docker-compose exec service_name /bin/sh`.
+
+- [x] `docker compose run` — Запускает одноразовый контейнер на основе сервисов, описанных в `docker-compose.yml`.  
+В отличие от `up`, команда `run` не сохраняет состояние контейнера после завершения работы.
+
+- [x] `docker compose config` — Проверяет файл `docker-compose.yml` на синтаксические ошибки и выводит его с применением всех переменных окружения.
+
+- [x] `docker compose pull` — Загружает образы из Docker Hub или другого реестра, не создавая контейнеры.
+
+- [x] `docker compose kill` — Прерывает (отправляет сигнал SIGKILL) все запущенные контейнеры, описанные в `docker-compose.yml`.
+
+- [x] `docker compose rm` — Удаляет остановленные контейнеры. Можно использовать с флагом `-f` для принудительного удаления без подтверждения.
+
+- [x] `docker compose scale` — Масштабирует количество запущенных контейнеров для указанного сервиса.  
+Например: `docker-compose scale web=3` создаст три контейнера для сервиса web.  
+
+>name: myapp  
+>  
+>>services:  
+>>first:  
+>>image: alpine:latest  
+>>command: ["top"] #CMD  
+>>networks:  
+>>- frontend  
+>  
+>>database:  
+>>image: postgres:latest  
+>>ports:  
+>>- "5435:5432"  
+>>environment:  
+>>- POSTGRES_PASSWORD_FILE=run/secrets/postgres_password  
+>>- POSTGRES_USER=postgres  
+>>networks:  
+>>- backend  
+>>volumes:  
+>>- db-data:/var/lib/postgresql/data  
+>>secrets:  
+>>- postgres_password  
+>  
+>  
+>>web:  
+>>image: myapp-web  
+>>environment:  
+>>- SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/postgres  
+>>build:  
+>>context: .  
+>>dockerfile: Dockerfile  
+>>networks:  
+>>- backend  
+>>- frontend  
+>  
+>>networks:  
+>>backend:  
+>>driver: bridge  
+>>frontend:  
+>>driver: bridge  
+>  
+>>volumes:  
+>>db-data:  
+>  
+>>secrets:  
+>>postgres_password:  
+>>file: ./secrets.txt  
+
+
 
 
 

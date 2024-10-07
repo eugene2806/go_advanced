@@ -1,0 +1,47 @@
+name: myapp
+
+services:
+  first:
+    image: alpine:latest
+    command: ["top"] #CMD
+    networks:
+    - frontend
+
+  database:
+    image: postgres:latest
+    ports:
+      - "5435:5432"
+    environment:
+      - POSTGRES_PASSWORD_FILE=run/secrets/postgres_password
+      - POSTGRES_USER=postgres
+    networks:
+      - backend
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    secrets:
+      - postgres_password
+
+
+  web:
+    image: myapp-web
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/postgres
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - backend
+      - frontend
+
+networks:
+    backend:
+      driver: bridge
+    frontend:
+      driver: bridge
+
+volumes:
+  db-data:
+
+secrets:
+  postgres_password:
+    file: ./secrets.txt
